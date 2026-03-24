@@ -12,17 +12,26 @@ let orders = [];
 
 // --- Firebase Sync Functions ---
 async function fetchMenu() {
-    const res = await fetch(`${DB_URL}/menu.json`);
-    const data = await res.json();
-    menu = data ? Object.values(data) : [];
-    renderMenu();
+    try {
+        const res = await fetch(`${DB_URL}/menu.json`);
+        const data = await res.json();
+        // Firebase object ko array mein badalna zaroori hai
+        menu = data ? Object.keys(data).map(key => data[key]) : [];
+        renderMenu();
+    } catch (err) {
+        console.error("Menu load nahi ho raha:", err);
+    }
 }
 
 async function fetchOrders() {
-    const res = await fetch(`${DB_URL}/orders.json`);
-    const data = await res.json();
-    orders = data ? Object.values(data) : [];
-    updateDotStatus();
+    try {
+        const res = await fetch(`${DB_URL}/orders.json`);
+        const data = await res.json();
+        orders = data ? Object.keys(data).map(key => data[key]) : [];
+        updateDotStatus();
+    } catch (err) {
+        console.error("Orders load nahi ho rahe:", err);
+    }
 }
 
 // --- Login Logic ---
@@ -72,6 +81,12 @@ function filterBySub(sub) {
 function renderMenu(itemsToDisplay = menu) {
     if(itemsToDisplay === menu) document.getElementById('sub-category-bar').innerHTML = "";
     const grid = document.getElementById('menu-grid');
+    
+    if(!itemsToDisplay || itemsToDisplay.length === 0) {
+        grid.innerHTML = "<p style='text-align:center; width:100%;'>No items found.</p>";
+        return;
+    }
+
     grid.innerHTML = itemsToDisplay.map(item => `
         <div class="food-card ${item.available ? '' : 'unavailable'}">
             <img src="${item.image}">
@@ -107,7 +122,7 @@ async function saveNewItem() {
             const newItem = { id, name, price, mainCategory: mainCat, subCategory: subCat, image: e.target.result, available: true };
             await fetch(`${DB_URL}/menu/${id}.json`, { method: 'PUT', body: JSON.stringify(newItem) });
             alert("Item Added!");
-            fetchMenu(); renderAdmin();
+            fetchMenu();
         };
         reader.readAsDataURL(imgFile);
     } else { alert("All fields are required!"); }
@@ -116,8 +131,10 @@ async function saveNewItem() {
 // --- Cart & Orders ---
 function addToCart(id) {
     const item = menu.find(m => m.id === id);
-    cart.push(item);
-    updateCartUI();
+    if(item) {
+        cart.push(item);
+        updateCartUI();
+    }
 }
 
 function updateCartUI() {
@@ -172,6 +189,7 @@ function updateDotStatus() {
     if(!user) return;
     const myOrders = orders.filter(o => o.customer === user.name && o.phone === user.phone);
     const dot = document.getElementById('status-dot');
+    if(!dot) return;
     const hasPreparing = myOrders.some(o => o.status === 'Preparing');
     const hasCompleted = myOrders.some(o => o.status === 'Completed');
     dot.className = "dot";
@@ -204,18 +222,25 @@ function renderAdmin() {
 
 async function confirmOrder(id) {
     await fetch(`${DB_URL}/orders/${id}/status.json`, { method: 'PUT', body: JSON.stringify("Completed") });
-    fetchOrders(); renderAdmin();
+    fetchOrders(); 
+    setTimeout(renderAdmin, 500); 
 }
 
 async function toggleStatus(id) {
     const item = menu.find(m => m.id === id);
-    await fetch(`${DB_URL}/menu/${id}/available.json`, { method: 'PUT', body: JSON.stringify(!item.available) });
-    fetchMenu(); renderAdmin();
+    if(item) {
+        await fetch(`${DB_URL}/menu/${id}/available.json`, { method: 'PUT', body: JSON.stringify(!item.available) });
+        fetchMenu();
+        setTimeout(renderAdmin, 500);
+    }
 }
 
 async function deleteItem(id) {
-    await fetch(`${DB_URL}/menu/${id}.json`, { method: 'DELETE' });
-    fetchMenu(); renderAdmin();
+    if(confirm("Delete this item?")) {
+        await fetch(`${DB_URL}/menu/${id}.json`, { method: 'DELETE' });
+        fetchMenu();
+        setTimeout(renderAdmin, 500);
+    }
 }
 
 checkLogin();
