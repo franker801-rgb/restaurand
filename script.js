@@ -1,4 +1,4 @@
-const DB_URL = "https://restaurant-807d1-default-rtdb.firebaseio.com";
+const DB_URL = "https://restaurant-807d1-default-rtdb.firebaseio.com/";
 
 const categories = {
     "Fast Food": ["Burgers", "Pizzas", "French Fries", "Sandwiches", "Noodle", "Manchurian", "Momos", "Pasta", "Tikka", "Dhosa"],
@@ -10,23 +10,22 @@ let menu = [];
 let cart = [];
 let orders = [];
 
-// Firebase Data Sync Functions
-async function syncWithFirebase(path, data) {
-    await fetch(`${DB_URL}/${path}.json`, {
-        method: 'PUT',
-        body: JSON.stringify(data)
-    });
+// --- Firebase Sync Functions ---
+async function fetchMenu() {
+    const res = await fetch(`${DB_URL}/menu.json`);
+    const data = await res.json();
+    menu = data ? Object.values(data) : [];
+    renderMenu();
 }
 
-async function loadFromFirebase() {
-    const menuRes = await fetch(`${DB_URL}/menu.json`);
-    menu = await menuRes.json() || [];
-    const ordersRes = await fetch(`${DB_URL}/orders.json`);
-    orders = await ordersRes.json() || [];
-    renderMenu();
+async function fetchOrders() {
+    const res = await fetch(`${DB_URL}/orders.json`);
+    const data = await res.json();
+    orders = data ? Object.values(data) : [];
     updateDotStatus();
 }
 
+// --- Login Logic ---
 function loginUser() {
     const name = document.getElementById('cust-name').value;
     const phone = document.getElementById('cust-phone').value;
@@ -42,7 +41,8 @@ function checkLogin() {
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
         document.getElementById('welcome-msg').innerHTML = `Namaste, ${user.name} <span class="edit-icon" onclick="editProfile()">✏️</span>`;
-        loadFromFirebase();
+        fetchMenu();
+        fetchOrders();
     }
 }
 
@@ -54,6 +54,7 @@ function editProfile() {
     document.getElementById('main-app').style.display = 'none';
 }
 
+// --- Menu Functions ---
 function filterByMainCat(mainCat) {
     const bar = document.getElementById('sub-category-bar');
     bar.innerHTML = categories[mainCat].map(sub => 
@@ -69,7 +70,7 @@ function filterBySub(sub) {
 }
 
 function renderMenu(itemsToDisplay = menu) {
-    if(itemsToDisplay === menu) { document.getElementById('sub-category-bar').innerHTML = ""; }
+    if(itemsToDisplay === menu) document.getElementById('sub-category-bar').innerHTML = "";
     const grid = document.getElementById('menu-grid');
     grid.innerHTML = itemsToDisplay.map(item => `
         <div class="food-card ${item.available ? '' : 'unavailable'}">
@@ -85,13 +86,14 @@ function renderMenu(itemsToDisplay = menu) {
     `).join('');
 }
 
+// --- Admin Functions ---
 function updateAdminSubOptions() {
     const main = document.getElementById('main-cat-select').value;
     const subSelect = document.getElementById('sub-cat-select');
-    if(main) { subSelect.innerHTML = categories[main].map(s => `<option value="${s}">${s}</option>`).join(''); }
+    if(main) subSelect.innerHTML = categories[main].map(s => `<option value="${s}">${s}</option>`).join('');
 }
 
-function saveNewItem() {
+async function saveNewItem() {
     const name = document.getElementById('food-name').value;
     const price = document.getElementById('food-price').value;
     const mainCat = document.getElementById('main-cat-select').value;
@@ -101,16 +103,17 @@ function saveNewItem() {
     if(name && price && imgFile && mainCat) {
         const reader = new FileReader();
         reader.onload = async function(e) {
-            const newItem = { id: Date.now(), name, price, mainCategory: mainCat, subCategory: subCat, image: e.target.result, available: true };
-            menu.push(newItem);
-            await syncWithFirebase('menu', menu);
+            const id = Date.now();
+            const newItem = { id, name, price, mainCategory: mainCat, subCategory: subCat, image: e.target.result, available: true };
+            await fetch(`${DB_URL}/menu/${id}.json`, { method: 'PUT', body: JSON.stringify(newItem) });
             alert("Item Added!");
-            renderAdmin(); renderMenu();
+            fetchMenu(); renderAdmin();
         };
         reader.readAsDataURL(imgFile);
     } else { alert("All fields are required!"); }
 }
 
+// --- Cart & Orders ---
 function addToCart(id) {
     const item = menu.find(m => m.id === id);
     cart.push(item);
@@ -134,21 +137,23 @@ async function placeOrder() {
     if(cart.length === 0) return alert("Please select items first!");
     const mode = document.querySelector('input[name="orderMode"]:checked').value;
     const user = JSON.parse(localStorage.getItem('shubhamUser'));
-    const order = { id: Date.now(), customer: user.name, phone: user.phone, items: cart.map(i => i.name).join(', '), total: document.getElementById('grand-total').innerText, mode: mode, status: 'Preparing' };
-    orders.push(order);
-    await syncWithFirebase('orders', orders);
+    const id = Date.now();
+    const order = { id, customer: user.name, phone: user.phone, items: cart.map(i => i.name).join(', '), total: document.getElementById('grand-total').innerText, mode, status: 'Preparing' };
+    
+    await fetch(`${DB_URL}/orders/${id}.json`, { method: 'PUT', body: JSON.stringify(order) });
     alert("Order Successful!");
-    cart = []; updateCartUI(); updateDotStatus();
+    cart = []; updateCartUI(); fetchOrders();
 }
 
-function showSection(s) {
+async function showSection(s) {
     document.getElementById('home-section').style.display = (s === 'home' ? 'block' : 'none');
     document.getElementById('admin-section').style.display = (s === 'admin' ? 'block' : 'none');
     document.getElementById('user-orders-section').style.display = 'none';
-    if(s === 'admin') renderAdmin();
+    if(s === 'admin') { await fetchOrders(); renderAdmin(); }
 }
 
-function showMyOrders() {
+async function showMyOrders() {
+    await fetchOrders();
     document.getElementById('home-section').style.display = 'none';
     document.getElementById('admin-section').style.display = 'none';
     document.getElementById('user-orders-section').style.display = 'block';
@@ -157,8 +162,7 @@ function showMyOrders() {
     const list = document.getElementById('my-orders-list');
     list.innerHTML = myOrders.length ? myOrders.map(o => `
         <div style="background:#f9f9f9; padding:15px; margin-bottom:10px; border-radius:10px; border-left:5px solid ${o.status === 'Completed' ? '#27ae60' : '#ff9f43'}">
-            <strong>Status: ${o.status}</strong><br>
-            Items: ${o.items}<br>Total: ₹${o.total}
+            <strong>Status: ${o.status}</strong><br>Items: ${o.items}<br>Total: ₹${o.total}
         </div>
     `).reverse().join('') : "<p>No orders yet.</p>";
 }
@@ -181,8 +185,8 @@ function renderAdmin() {
         <div style="display:flex; justify-content:space-between; font-size:0.8rem; padding:8px; border-bottom:1px solid #eee;">
             <span>${m.name}</span>
             <div>
-                <button onclick="toggleStatus(${m.id})" style="font-size:0.7rem;">${m.available ? 'Avl' : 'Unavl'}</button>
-                <button onclick="deleteItem(${m.id})" style="color:red; font-size:0.7rem;">Del</button>
+                <button onclick="toggleStatus(${m.id})">${m.available ? 'Avl' : 'Unavl'}</button>
+                <button onclick="deleteItem(${m.id})" style="color:red;">Del</button>
             </div>
         </div>
     `).join('');
@@ -190,7 +194,7 @@ function renderAdmin() {
     const oList = document.getElementById('admin-orders');
     oList.innerHTML = `<h4>Live Orders</h4>` + orders.map(o => `
         <div style="background:#f9f9f9; padding:8px; margin-bottom:5px; font-size:0.75rem; border-left:3px solid var(--accent);">
-            <strong>${o.customer} (${o.phone})</strong> - <span style="font-weight:bold;">${o.mode}</span><br>
+            <strong>${o.customer} (${o.phone})</strong> - <b>${o.mode}</b><br>
             <span style="color:${o.status==='Completed'?'green':'orange'}">${o.status}</span><br>
             ${o.items}<br>Total: ₹${o.total}
             ${o.status === 'Preparing' ? `<br><button class="confirm-btn" onclick="confirmOrder(${o.id})">Mark Completed</button>` : ''}
@@ -199,25 +203,19 @@ function renderAdmin() {
 }
 
 async function confirmOrder(id) {
-    const order = orders.find(o => o.id === id);
-    if(order) {
-        order.status = 'Completed';
-        await syncWithFirebase('orders', orders);
-        renderAdmin(); updateDotStatus();
-    }
+    await fetch(`${DB_URL}/orders/${id}/status.json`, { method: 'PUT', body: JSON.stringify("Completed") });
+    fetchOrders(); renderAdmin();
 }
 
 async function toggleStatus(id) {
     const item = menu.find(m => m.id === id);
-    item.available = !item.available;
-    await syncWithFirebase('menu', menu);
-    renderAdmin(); renderMenu();
+    await fetch(`${DB_URL}/menu/${id}/available.json`, { method: 'PUT', body: JSON.stringify(!item.available) });
+    fetchMenu(); renderAdmin();
 }
 
 async function deleteItem(id) {
-    menu = menu.filter(m => m.id !== id);
-    await syncWithFirebase('menu', menu);
-    renderAdmin(); renderMenu();
+    await fetch(`${DB_URL}/menu/${id}.json`, { method: 'DELETE' });
+    fetchMenu(); renderAdmin();
 }
 
 checkLogin();
