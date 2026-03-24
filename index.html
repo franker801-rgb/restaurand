@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shubham Restaurant | Premium Edition</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="bg-overlay"></div>
+
+    <div id="login-overlay" class="overlay">
+        <div class="login-card">
+            <h1 style="font-family: 'Playfair Display'; color: #ff9f43;">Shubham Restaurant</h1>
+            <p>Enter your details to explore our premium menu</p>
+            <div class="input-group">
+                <input type="text" id="cust-name" placeholder="Full Name" required>
+                <input type="tel" id="cust-phone" placeholder="Phone Number" required>
+            </div>
+            <button class="login-btn" onclick="loginUser()">View Menu</button>
+        </div>
+    </div>
+
+    <div id="main-app" style="display:none;">
+        <nav>
+            <div class="nav-container">
+                <div class="logo">SHUBHAM <span>RESTAURANT</span></div>
+                <div class="nav-links">
+                    <span id="welcome-msg" style="font-weight: 600; color: #555; margin-right: 15px;"></span>
+                    <button class="nav-btn" onclick="showSection('home')">Home</button>
+                    <button class="nav-btn my-order-btn" onclick="showMyOrders()">
+                        My Order <span id="status-dot" class="dot"></span>
+                    </button>
+                    <button onclick="showSection('admin')" class="nav-btn admin-link">Admin Panel</button>
+                </div>
+            </div>
+        </nav>
+
+        <header class="hero-banner">
+            <div class="banner-content">
+                <h1>Swaad Jo Dil Jeet Le</h1>
+                <p>Pure Veg & Non-Veg Premium Delicacies</p>
+            </div>
+        </header>
+
+        <section id="home-section" class="active-section">
+            <div class="main-categories">
+                <button class="cat-main-btn" onclick="renderMenu()">🍽️ All Food</button>
+                <button class="cat-main-btn" onclick="filterByMainCat('Fast Food')">🍔 Fast Food</button>
+                <button class="cat-main-btn" onclick="filterByMainCat('Traditional Food')">🍛 Traditional Food</button>
+                <button class="cat-main-btn" onclick="filterByMainCat('Drinks')">🥤 Drinks</button>
+            </div>
+
+            <div id="sub-category-bar" class="sub-bar"></div>
+
+            <div class="main-layout">
+                <div id="menu-grid" class="menu-grid"></div>
+
+                <div class="cart-card">
+                    <h3>🛒 Your Order</h3>
+                    <div id="cart-items" class="cart-items-scroll"></div>
+                    <div class="cart-footer">
+                        <div class="order-mode">
+                            <label><input type="radio" name="orderMode" value="Dine-in" checked> Dine-in</label>
+                            <label><input type="radio" name="orderMode" value="Parcel"> Parcel</label>
+                        </div>
+                        <div class="total-row">Total: <span>₹<span id="grand-total">0</span></span></div>
+                        <button class="checkout-btn" onclick="placeOrder()">Order Now</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="user-orders-section" style="display:none; padding: 20px 5%;">
+            <div class="admin-card">
+                <h3>My Recent Orders</h3>
+                <div id="my-orders-list"></div>
+                <button class="cat-main-btn" onclick="showSection('home')" style="margin-top:20px;">Back to Menu</button>
+            </div>
+        </section>
+
+        <section id="admin-section" style="display:none;">
+            <div class="admin-grid">
+                <div class="admin-card">
+                    <h3>Add New Food</h3>
+                    <input type="text" id="food-name" placeholder="Item Name">
+                    <input type="number" id="food-price" placeholder="Price">
+                    <select id="main-cat-select" onchange="updateAdminSubOptions()">
+                        <option value="">Select Category</option>
+                        <option value="Fast Food">Fast Food</option>
+                        <option value="Traditional Food">Traditional Food</option>
+                        <option value="Drinks">Drinks</option>
+                    </select>
+                    <select id="sub-cat-select"></select>
+                    <input type="file" id="food-img" accept="image/*">
+                    <button class="add-btn" onclick="saveNewItem()">Upload Item</button>
+                </div>
+                <div class="admin-card">
+                    <h3>Inventory & Orders</h3>
+                    <div id="admin-menu-list"></div>
+                    <hr>
+                    <div id="admin-orders"></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
