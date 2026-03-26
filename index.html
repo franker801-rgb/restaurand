@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Shubham Restaurant | Premium Edition</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
@@ -28,12 +28,14 @@
             <div class="nav-container">
                 <div class="logo">SHUBHAM <span>RESTAURANT</span></div>
                 <div class="nav-links">
-                    <span id="welcome-msg" style="font-weight: 600; color: #555; margin-right: 15px;"></span>
-                    <button class="nav-btn" onclick="showSection('home')">Home</button>
-                    <button class="nav-btn my-order-btn" onclick="showMyOrders()">
-                        My Order <span id="status-dot" class="dot"></span>
-                    </button>
-                    <button onclick="showSection('admin')" class="nav-btn admin-link">Admin Panel</button>
+                    <span id="welcome-msg" style="font-weight: 600; color: #555;"></span>
+                    <div class="btn-group">
+                        <button class="nav-btn" onclick="showSection('home')">Home</button>
+                        <button class="nav-btn my-order-btn" onclick="showMyOrders()">
+                            My Order <span id="status-dot" class="dot"></span>
+                        </button>
+                        <button onclick="showSection('admin')" class="nav-btn admin-link">Admin</button>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -47,9 +49,9 @@
 
         <section id="home-section" class="active-section">
             <div class="main-categories">
-                <button class="cat-main-btn" onclick="renderMenu()">🍽️ All Food</button>
+                <button class="cat-main-btn" onclick="fetchMenu()">🍽️ All</button>
                 <button class="cat-main-btn" onclick="filterByMainCat('Fast Food')">🍔 Fast Food</button>
-                <button class="cat-main-btn" onclick="filterByMainCat('Traditional Food')">🍛 Traditional Food</button>
+                <button class="cat-main-btn" onclick="filterByMainCat('Traditional Food')">🍛 Traditional</button>
                 <button class="cat-main-btn" onclick="filterByMainCat('Drinks')">🥤 Drinks</button>
             </div>
 
